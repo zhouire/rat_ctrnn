@@ -12,9 +12,13 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
     #delta_speed = [delta_speed_init]
     speed = [np.mean(speed_range)]
 
-    # generate positions
-    x = [x_init]
-    y = [y_init]
+    if x_init is not None and y_init is not None:
+        # generate positions
+        x = [x_init]
+        y = [y_init]
+    else:
+        x = [np.random.random()-0.5]
+        y = [np.random.random()-0.5]
 
     for i in range(n):
         ### DETERMINING SPEED
@@ -227,10 +231,10 @@ y_init = 0
 
 xy_range = [-1, 1]
 num_paths = int(1000000/500)
-save_path = "rat_ctrnn_data.p"
+save_path = "rat_ctrnn_data_randstart.p"
 
 #x, y, speed, rot = generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range)
-input_x, input_y = generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init, y_init, xy_range, save_path)
+input_x, input_y = generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init=None, y_init=None, xy_range=xy_range, save_path=save_path)
 
 x = input_x[:500, 0].T.tolist()
 y = input_x[:500, 1].T.tolist()
