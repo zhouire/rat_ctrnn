@@ -195,6 +195,12 @@ def generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init, y_ini
         speed_all += speed[:-1]
         rot_all += rot[:-1]
 
+    # scale rot_all to [-1, 1]
+    rot_all = (np.array(rot_all) + np.pi) % (2*np.pi) - np.pi
+
+    # scale speed to [0, 1]
+    speed_all = np.array(speed_all)/speed_range[1]
+
     # create input_x and input_y; input_x is speed and rotation, input_y is position
     input_x = np.array([speed_all, rot_all]).T
     input_y = np.array([x_all, y_all]).T
@@ -226,10 +232,13 @@ save_path = "rat_ctrnn_data.p"
 #x, y, speed, rot = generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range)
 input_x, input_y = generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init, y_init, xy_range, save_path)
 
-print(input_x.shape)
-print(input_y.shape)
+x = input_x[:500, 0].T.tolist()
+y = input_x[:500, 1].T.tolist()
 
-#plt.scatter(x, y, s=0.1)
+#print(input_x[:,:])
+#print(y)
+
+plt.scatter(x, y, s=0.1)
 #plt.xlim([-1,1])
 #plt.ylim([-1,1])
-#plt.show()
+plt.show()
