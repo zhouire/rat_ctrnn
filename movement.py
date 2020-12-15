@@ -233,16 +233,21 @@ xy_range = [-1, 1]
 num_paths = int(1000000/500)
 save_path = "rat_ctrnn_data_randstart.p"
 
-#x, y, speed, rot = generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range)
-input_x, input_y = generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init=None, y_init=None, xy_range=xy_range, save_path=save_path)
+x, y, speed, rot = generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range)
+#input_x, input_y = generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init=None, y_init=None, xy_range=xy_range, save_path=save_path)
 
-x = input_x[:500, 0].T.tolist()
-y = input_x[:500, 1].T.tolist()
+#x = input_x[:500, 0].T.tolist()
+#y = input_x[:500, 1].T.tolist()
 
 #print(input_x[:,:])
 #print(y)
 
-plt.scatter(x, y, s=0.1)
-#plt.xlim([-1,1])
-#plt.ylim([-1,1])
+plt.scatter(x, y, s=0.1, c='purple')
+plt.xlim([-1,1])
+plt.ylim([-1,1])
 plt.show()
+
+
+# 2d neuron interaction mask, 100 neurons
+dim = 10
+
