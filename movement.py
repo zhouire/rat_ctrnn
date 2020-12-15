@@ -1,15 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-import os
 
-def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
+def generate_path(n, k, delta_rot_std, speed_range, x_init, y_init, xy_range):
     # initialize rotation
     rot_init = np.random.random() * 2 * np.pi
     rot = [rot_init]
 
     # initialize speed
-    #delta_speed = [delta_speed_init]
     speed = [np.mean(speed_range)]
 
     if x_init is not None and y_init is not None:
@@ -22,18 +20,6 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
 
     for i in range(n):
         ### DETERMINING SPEED
-        '''
-        speed_valid = False
-        # keep generating until we get a valid new speed
-        while not speed_valid:
-            #print("speed invalid")
-            #new_delta_speed = np.random.random() * max_delta_speed
-            #new_speed = speed[-1] + new_delta_speed
-            new_speed = np.random.random() * speed_range[1]
-    
-            if speed_range[0] < new_speed < speed_range[1]:
-                speed_valid = True
-        '''
         new_speed = np.random.random() * (speed_range[1] - speed_range[0]) + speed_range[0]
 
         # interpolate speed
@@ -43,18 +29,11 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
 
         ### DETERMINING ROTATION
         # get new rotation
-        new_delta_rot = np.random.randn() * max_delta_rot
+        new_delta_rot = np.random.randn() * delta_rot_std
         new_rot = rot[-1] + new_delta_rot
 
         # interpolate rotation
         new_rot_interp = np.interp(np.arange(k+1), [0, k], [rot[-1], new_rot])[1:]
-
-        '''
-        if np.random.random() > 0.5:
-            new_rot_interp = np.interp(np.arange(k), [0, k], [rot[-1], new_rot])
-        else:
-            new_rot_interp = np.interp(np.arange(k), [0, k], [rot[-1], new_rot-2*np.pi])
-        '''
 
         # calculate x and y, test to see if any part of the path is outside of [-1, 1]
         new_delta_x = new_speed_interp * np.cos(new_rot_interp)
@@ -62,8 +41,6 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
 
         new_x = x[-1] + np.cumsum(new_delta_x)
         new_y = y[-1] + np.cumsum(new_delta_y)
-        #new_x = new_x[1:]
-        #new_y = new_y[1:]
 
         # check to see if all new_x and new_y values are in range [-1,1]
         rot_invalid = sum(new_x <= -1) > 0 or sum(new_x >= 1) > 0 or sum(new_y <= -1) > 0 or sum(new_y >= 1) > 0
@@ -74,7 +51,6 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
             loopcount = 0
 
             while rot_invalid:
-                #print("rotation invalid")
                 # if we hit a wall, make the angle parallel to the wall where we hit it and resample angle for the rest of the sample
                 # keep the unproblematic parts
                 problem_idx = len(new_x)
@@ -90,23 +66,15 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
                 if loopcount > 0 and problem_idx == 0:
                     stuck = True
 
-                #print(problem_idx, len(new_x), len(new_y))
                 if problem_idx > 0:
                     prev_rot = new_rot_interp[problem_idx-1]
                 else:
                     prev_rot = rot[-1]
-                    #print(problem_x, problem_y)
-                    #print("prev_rot: ", prev_rot)
 
                 x += new_x[:problem_idx].tolist()
                 y += new_y[:problem_idx].tolist()
                 rot += new_rot_interp[:problem_idx].tolist()
                 new_speed_interp = new_speed_interp[problem_idx:]
-
-                #new_rot_interp = new_rot_interp[problem_idx:]
-
-                #new_x = []
-                #new_y = []
 
                 # take the angle parallel to the wall with the smallest change from the current angle
                 if new_y[problem_idx] <= -1:
@@ -148,11 +116,9 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
                 else:
                     raise ValueError("wtf just happened")
 
-                future_delta_rot = future_dir * np.abs(np.random.randn() * max_delta_rot)
+                future_delta_rot = future_dir * np.abs(np.random.randn() * delta_rot_std)
                 interp_remain = len(new_x) - problem_idx
                 new_rot_interp = np.interp(np.arange(interp_remain), [0, interp_remain-1], [new_angle, new_angle+future_delta_rot])
-                #print("new rot interp: ", new_angle/np.pi, future_delta_rot)
-                #print()
 
                 # calculate x and y, test to see if any part of the path is outside of [-1, 1]
                 new_delta_x = new_speed_interp * np.cos(new_rot_interp)
@@ -160,13 +126,9 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
 
                 new_x = x[-1] + np.cumsum(new_delta_x)
                 new_y = y[-1] + np.cumsum(new_delta_y)
-                # new_x = new_x[1:]
-                # new_y = new_y[1:]
-                #print(new_x, new_y)
 
                 # check to see if all new_x and new_y values are in range [-1,1]
                 rot_invalid = sum(new_x <= -1) > 0 or sum(new_x >= 1) > 0 or sum(new_y <= -1) > 0 or sum(new_y >= 1) > 0
-                #print("rotation still invalid")
 
                 loopcount += 1
 
@@ -177,7 +139,6 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
 
         # if rotation is valid, append new position values, and new rotation values
         else:
-            #print(len(x))
             # if this rotation works, append the new x and y values
             x += new_x.tolist()
             y += new_y.tolist()
@@ -185,15 +146,16 @@ def generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range):
 
     return x, y, speed, rot
 
+
 # generate a bunch of paths, concatenated end to end
-def generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init, y_init, xy_range, save_path=None):
+def generate_movement(num_paths, n, k, delta_rot_std, speed_range, x_init, y_init, xy_range, save_path=None):
     x_all = []
     y_all = []
     speed_all = []
     rot_all = []
 
     for i in range(num_paths):
-        x, y, speed, rot = generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range)
+        x, y, speed, rot = generate_path(n, k, delta_rot_std, speed_range, x_init, y_init, xy_range)
         x_all += x[:-1]
         y_all += y[:-1]
         speed_all += speed[:-1]
@@ -220,34 +182,23 @@ def generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init, y_ini
 n = 25
 k = 20
 # angle is in radians
-# this is not actually the max rotation, it's actually standard deviation for Gaussian generation
-max_delta_rot = 0.8
-#max_delta_speed = 0.001
+delta_rot_std = 0.8
 speed_range = [0, 0.02]
 
-#delta_speed_init = 0
 x_init = 0
 y_init = 0
 
 xy_range = [-1, 1]
 num_paths = int(1000000/500)
-save_path = "rat_ctrnn_data_randstart.p"
+save_path = "rat_ctrnn_data.p"
 
-x, y, speed, rot = generate_path(n, k, max_delta_rot, speed_range, x_init, y_init, xy_range)
-#input_x, input_y = generate_movement(num_paths, n, k, max_delta_rot, speed_range, x_init=None, y_init=None, xy_range=xy_range, save_path=save_path)
+#x, y, speed, rot = generate_path(n, k, delta_rot_std, speed_range, x_init, y_init, xy_range)
+input_x, input_y = generate_movement(num_paths, n, k, delta_rot_std, speed_range, x_init, y_init, xy_range=xy_range, save_path=save_path)
+x = input_x[:500, 0].T.tolist()
+y = input_x[:500, 1].T.tolist()
 
-#x = input_x[:500, 0].T.tolist()
-#y = input_x[:500, 1].T.tolist()
-
-#print(input_x[:,:])
-#print(y)
-
+# plot generated path example
 plt.scatter(x, y, s=0.1, c='purple')
 plt.xlim([-1,1])
 plt.ylim([-1,1])
 plt.show()
-
-
-# 2d neuron interaction mask, 100 neurons
-dim = 10
-
